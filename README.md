@@ -4,6 +4,8 @@
 
 Simple, opinionated, Github changelog generator written in Haskell.
 
+**Please Note:** This project is a work in progress.
+
 ## Example
 
 ```
