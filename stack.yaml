@@ -1,0 +1,8 @@
+resolver: nightly-2016-05-13
+system-ghc: false
+install-ghc: true
+packages:
+- '.'
+extra-deps: []
+flags: {}
+extra-package-dbs: []
