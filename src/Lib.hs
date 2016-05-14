@@ -12,7 +12,6 @@ import           Data.Text (Text, pack)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.Format (defaultTimeLocale, formatTime)
 import           Data.Vector (Vector)
-import           System.IO.Unsafe (unsafePerformIO)
 import           Text.Hastache (MuContext, defaultConfig, encodeStr, hastacheStr)
 import           Text.Hastache.Context (mkGenericContext)
 
@@ -85,10 +84,10 @@ closedPullRequestsSince params@DeltaParams{..} since = do
     GH.pullRequestsForR deltaOwner deltaRepo (Just "closed") (Just 100)
   case response' of
     Left err  -> error $ show err
-    Right prs -> return $ V.takeWhile (hasSinceBeenMerged since) prs
+    Right prs -> return $ V.takeWhile hasSinceBeenMerged prs
   where
-    hasSinceBeenMerged :: UTCTime -> GH.SimplePullRequest -> Bool
-    hasSinceBeenMerged since pr = case GH.simplePullRequestMergedAt pr of
+    hasSinceBeenMerged :: GH.SimplePullRequest -> Bool
+    hasSinceBeenMerged pr = case GH.simplePullRequestMergedAt pr of
       Just mergedAt -> since < mergedAt
       _             -> False
 
