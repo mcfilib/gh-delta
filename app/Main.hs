@@ -4,7 +4,7 @@ module Main where
 
 import           Data.String (fromString)
 import           Lib (generate)
-import           Options.Applicative
+import           Options.Applicative (Parser, ParserInfo, (<>), execParser, fullDesc, header, help, helper, info, long, progDesc, strOption)
 
 import qualified GitHub as GH
 
