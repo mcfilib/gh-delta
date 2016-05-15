@@ -1,3 +1,4 @@
+compiler: ghc-7.10.2
 resolver: nightly-2016-05-13
 system-ghc: false
 install-ghc: true
