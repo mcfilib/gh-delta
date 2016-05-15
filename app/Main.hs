@@ -2,21 +2,15 @@
 
 module Main where
 
-import           Data.String (fromString)
-import           Lib (generate)
-import           Options.Applicative (Parser, ParserInfo, (<>), execParser, fullDesc, header, help, helper, info, long, progDesc, strOption)
+import           Data.String         (fromString)
+import           Lib                 (generate)
+import           Options.Applicative (Parser, ParserInfo, execParser, fullDesc,
+                                      header, help, helper, info, long,
+                                      progDesc, strOption, (<>))
 
-import qualified GitHub as GH
+import qualified GitHub              as GH
 
---------------------------------------------------------------------------------
-
-data CLIOpts = CLIOpts { auth  :: String
-                       , owner :: String
-                       , repo  :: String
-                       , since :: String
-                       }
-
---------------------------------------------------------------------------------
+data CLIOpts = CLIOpts { auth :: String, owner :: String, repo :: String, since :: String }
 
 cliOpts :: ParserInfo CLIOpts
 cliOpts =
@@ -24,8 +18,6 @@ cliOpts =
     (fullDesc
      <> progDesc "Simple, opinionated, Github changelog generator written in Haskell"
      <> header "gh-delta - changelog generator")
-
---------------------------------------------------------------------------------
 
 cliOptsParser :: Parser CLIOpts
 cliOptsParser =
@@ -38,16 +30,9 @@ cliOptsParser =
           <*> strOption (long "since"
                          <> help "Since SHA")
 
---------------------------------------------------------------------------------
+runCli :: CLIOpts -> IO ()
+runCli CLIOpts { .. } = generate (GH.OAuth . fromString $ auth) (fromString owner) (fromString repo)
+                          (fromString since)
 
 main :: IO ()
 main = execParser cliOpts >>= runCli
-
---------------------------------------------------------------------------------
-
-runCli :: CLIOpts -> IO ()
-runCli CLIOpts{..} = generate
-  (GH.OAuth . fromString $ auth)
-  (fromString owner)
-  (fromString repo)
-  (fromString since)

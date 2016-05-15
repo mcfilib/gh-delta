@@ -3,6 +3,10 @@
 clean: ## Clean Haskell local packages
 	@stack clean
 
+format: ## Format Haskell source
+	@stack install hfmt
+	@hfmt --write-sources
+
 install: ## Compile Haskell binary
 	@stack install
 
@@ -20,6 +24,7 @@ help: ## Print available tasks
 
 .PHONY:
 	clean
+	format
 	install
 	repl
 	spec
