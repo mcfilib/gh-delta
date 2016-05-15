@@ -3,12 +3,11 @@
 module Main where
 
 import           Data.String         (fromString)
+import qualified GitHub              as GH
 import           Lib                 (generate)
 import           Options.Applicative (Parser, ParserInfo, execParser, fullDesc,
                                       header, help, helper, info, long,
                                       progDesc, strOption, (<>))
-
-import qualified GitHub              as GH
 
 data CLIOpts = CLIOpts { auth :: String, owner :: String, repo :: String, since :: String }
 
