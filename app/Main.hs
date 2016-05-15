@@ -1,10 +1,8 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Main where
 
 import           Data.String (fromString)
-import           Data.Text (Text, pack)
 import           Lib (generate)
 import           Options.Applicative
 
@@ -25,7 +23,7 @@ cliOpts =
   info (helper <*> cliOptsParser)
     (fullDesc
      <> progDesc "Simple, opinionated, Github changelog generator written in Haskell"
-     <> header "delta - changelog generator")
+     <> header "gh-delta - changelog generator")
 
 --------------------------------------------------------------------------------
 
