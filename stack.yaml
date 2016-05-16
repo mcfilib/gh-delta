@@ -4,6 +4,9 @@ system-ghc: false
 install-ghc: true
 packages:
 - '.'
+- location:
+    git: git@github.com:iconnect/github.git
+    commit: "410f7f462f833fe6afd30c796d4c117f0baed696"
 extra-deps: []
 flags: {}
 extra-package-dbs: []
