@@ -3,7 +3,7 @@
 {-# LANGUAGE RecordWildCards    #-}
 {-# LANGUAGE TemplateHaskell    #-}
 
-module Lib (generate) where
+module Lib (generate, DeltaParams(..)) where
 
 import           Control.Monad         (unless)
 import           Data.FileEmbed        (embedStringFile)
@@ -37,22 +37,19 @@ data Delta = Delta { deltaDate :: Text, deltaEvents :: [Event] }
   deriving (Data, Typeable)
 
 -- | Write changelog entry since SHA to STDOUT.
-generate :: GH.Auth -> GH.Name GH.Owner -> GH.Name GH.Repo -> GH.Name GH.GitCommit -> IO ()
-generate auth owner repo sha = do
+generate :: DeltaParams -> IO ()
+generate params@DeltaParams { .. } = do
   response <- commitDate params
   case response of
     Left err -> error $ show err
-    Right since -> do
-      prs <- closedPullRequestsSince params since
+    Right start -> do
+      prs <- closedPullRequestsSince params start
       unless (V.null prs) $
-        hastacheStr defaultConfig (encodeStr template) (context since prs) >>= TL.putStrLn
+        hastacheStr defaultConfig (encodeStr template) (context start prs) >>= TL.putStrLn
 
   where
     context :: UTCTime -> Vector GH.SimplePullRequest -> MuContext IO
-    context since prs = mkGenericContext $ toDelta since prs
-
-    params :: DeltaParams
-    params = DeltaParams auth owner repo sha
+    context start prs = mkGenericContext $ toDelta start prs
 
     template :: String
     template = $(embedStringFile "src/Delta.mustache")
@@ -83,10 +80,10 @@ closedPullRequestsSince params@DeltaParams { .. } since = do
 
 -- | Convert collection of pull requests to internal representation.
 toDelta :: UTCTime -> Vector GH.SimplePullRequest -> Delta
-toDelta since prs = Delta date events
+toDelta start prs = Delta date events
   where
     date :: Text
-    date = pack $ formatTime defaultTimeLocale "%d %b %Y" since
+    date = pack $ formatTime defaultTimeLocale "%d %b %Y" start
 
     events :: [Event]
     events = V.toList $ fmap toEvent prs
