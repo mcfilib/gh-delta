@@ -12,6 +12,10 @@ Simple, opinionated, Github changelog generator written in Haskell.
 gh-delta --owner username --repo reponame --since sha --auth token > CHANGELOG.md
 ```
 
+You may also specify your
+[personal access token](https://github.com/settings/tokens/new) by specifying it
+in the `GH_DELTA_AUTH` environment variable.
+
 ## Development
 
 ```

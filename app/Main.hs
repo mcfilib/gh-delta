@@ -2,14 +2,16 @@
 
 module Main where
 
+import           Data.Maybe          (fromMaybe)
 import           Data.String         (fromString)
 import qualified GitHub              as GH
 import           Lib                 (DeltaParams (..), generate)
 import           Options.Applicative (Parser, ParserInfo, execParser, fullDesc,
                                       header, help, helper, info, long,
-                                      progDesc, strOption, (<>))
+                                      optional, progDesc, strOption, (<>))
+import           System.Environment  (lookupEnv)
 
-data CLIOpts = CLIOpts { auth :: String, owner :: String, repo :: String, since :: String }
+data CLIOpts = CLIOpts { auth :: Maybe String, owner :: String, repo :: String, since :: String }
 
 cliOpts :: ParserInfo CLIOpts
 cliOpts =
@@ -20,8 +22,8 @@ cliOpts =
 
 cliOptsParser :: Parser CLIOpts
 cliOptsParser =
-  CLIOpts <$> strOption (long "auth"
-                         <> help "Personal access token")
+  CLIOpts <$> optional (strOption (long "auth"
+                                   <> help "Personal access token"))
           <*> strOption (long "owner"
                          <> help "Repository owner")
           <*> strOption (long "repo"
@@ -30,10 +32,20 @@ cliOptsParser =
                          <> help "Since SHA")
 
 runCli :: CLIOpts -> IO ()
-runCli CLIOpts { .. } = generate params
+runCli CLIOpts { .. } = do
+  envAuth <- lookupEnv "GH_DELTA_AUTH"
+  generate $
+    case (envAuth, auth) of
+      (Just x, _) -> params x
+      (_, Just x) -> params x
+      _           -> error "set GH_DELTA_AUTH environment variable or specify --auth"
+
   where
-    params = DeltaParams (GH.OAuth . fromString $ auth) (fromString owner) (fromString repo)
-               (fromString since)
+    params authToken = DeltaParams
+                         (GH.OAuth . fromString $ authToken)
+                         (fromString owner)
+                         (fromString repo)
+                         (fromString since)
 
 main :: IO ()
 main = execParser cliOpts >>= runCli
