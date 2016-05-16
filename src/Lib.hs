@@ -3,12 +3,21 @@
 {-# LANGUAGE RecordWildCards    #-}
 {-# LANGUAGE TemplateHaskell    #-}
 
-module Lib (generate, DeltaParams(..)) where
+module Lib (
+    generate,
+    DeltaParams,
+    defaultDeltaParams,
+    setDeltaParamsAuth,
+    setDeltaParamsOwner,
+    setDeltaParamsRepo,
+    setDeltaParamsSince,
+    ) where
 
 import           Control.Monad         (unless)
 import           Data.FileEmbed        (embedStringFile)
 import           Data.Function         ((&))
 import           Data.Generics         (Data, Typeable)
+import           Data.String           (fromString)
 import           Data.Text             (Text, pack)
 import qualified Data.Text.Lazy.IO     as TL
 import           Data.Time.Clock       (UTCTime)
@@ -23,11 +32,32 @@ import           Text.Hastache.Context (mkGenericContext)
 -- | Parameters required to generate a Delta.
 data DeltaParams =
        DeltaParams
-         { deltaAuth  :: GH.Auth
+         { deltaAuth  :: Maybe GH.Auth
          , deltaOwner :: GH.Name GH.Owner
          , deltaRepo  :: GH.Name GH.Repo
          , deltaSince :: GH.Name GH.GitCommit
          }
+
+-- | Default params using the gh-delta repo.
+defaultDeltaParams :: DeltaParams
+defaultDeltaParams =
+  DeltaParams Nothing "filib" "gh-delta" "f44caa05adf066ae441cbdbebe54010d94172e9a"
+
+-- | Setter for personal access token.
+setDeltaParamsAuth :: Maybe String -> DeltaParams -> DeltaParams
+setDeltaParamsAuth x params = params { deltaAuth = fmap (GH.OAuth . fromString) x }
+
+-- | Setter for owner.
+setDeltaParamsOwner :: String -> DeltaParams -> DeltaParams
+setDeltaParamsOwner x params = params { deltaOwner = fromString x }
+
+-- | Setter for repo.
+setDeltaParamsRepo :: String -> DeltaParams -> DeltaParams
+setDeltaParamsRepo x params = params { deltaRepo = fromString x }
+
+-- | Setter for SHA.
+setDeltaParamsSince :: String -> DeltaParams -> DeltaParams
+setDeltaParamsSince x params = params { deltaSince = fromString x }
 
 -- | Single event in a changelog.
 data Event = Event { eventAuthor :: Text, eventTitle :: Text, eventLink :: Text }
@@ -58,7 +88,7 @@ generate params@DeltaParams { .. } = do
 -- | Get date a commit was created.
 commitDate :: DeltaParams -> IO (Either GH.Error UTCTime)
 commitDate DeltaParams { .. } = do
-  response <- GH.executeRequest deltaAuth $ GH.gitCommitR deltaOwner deltaRepo deltaSince
+  response <- GH.executeRequestMaybe deltaAuth $ GH.gitCommitR deltaOwner deltaRepo deltaSince
   case response of
     Left err     -> return $ Left err
     Right commit -> return $ Right (GH.gitUserDate $ GH.gitCommitAuthor commit)
@@ -66,16 +96,16 @@ commitDate DeltaParams { .. } = do
 -- | Get pull requests closed since a given date.
 closedPullRequestsSince :: DeltaParams -> UTCTime -> IO (Vector GH.SimplePullRequest)
 closedPullRequestsSince params@DeltaParams { .. } since = do
-  response' <- GH.executeRequest deltaAuth $
-                 GH.pullRequestsForR deltaOwner deltaRepo params (Just 100)
+  response' <- GH.executeRequestMaybe deltaAuth $
+                 GH.pullRequestsForR deltaOwner deltaRepo opts (Just 100)
   case response' of
     Left err  -> error $ show err
     Right prs -> return $ V.filter hasSinceBeenMerged prs
 
   where
-    params :: GH.PullRequestOptions
-    params = GH.defaultPullRequestOptions
-             & GH.setPullRequestOptionsState GH.PullRequestStateClosed
+    opts :: GH.PullRequestOptions
+    opts = GH.defaultPullRequestOptions
+           & GH.setPullRequestOptionsState GH.PullRequestStateClosed
 
     hasSinceBeenMerged :: GH.SimplePullRequest -> Bool
     hasSinceBeenMerged pr =
