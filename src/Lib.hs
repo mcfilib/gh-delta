@@ -5,16 +5,17 @@
 
 module Lib (generate, DeltaParams(..)) where
 
-import           Control.Monad         (unless)
-import           Data.FileEmbed        (embedStringFile)
-import           Data.Generics         (Data, Typeable)
-import           Data.Text             (Text, pack)
-import qualified Data.Text.Lazy.IO     as TL
-import           Data.Time.Clock       (UTCTime)
-import           Data.Time.Format      (defaultTimeLocale, formatTime)
-import           Data.Vector           (Vector)
-import qualified Data.Vector           as V
-import qualified GitHub                as GH
+import           Control.Monad (unless)
+import           Data.FileEmbed (embedStringFile)
+import           Data.Function ((&))
+import           Data.Generics (Data, Typeable)
+import           Data.Text (Text, pack)
+import qualified Data.Text.Lazy.IO as TL
+import           Data.Time.Clock (UTCTime)
+import           Data.Time.Format (defaultTimeLocale, formatTime)
+import           Data.Vector (Vector)
+import qualified Data.Vector as V
+import qualified GitHub as GH
 import           Text.Hastache         (MuContext, defaultConfig, encodeStr,
                                         hastacheStr)
 import           Text.Hastache.Context (mkGenericContext)
@@ -66,12 +67,16 @@ commitDate DeltaParams { .. } = do
 closedPullRequestsSince :: DeltaParams -> UTCTime -> IO (Vector GH.SimplePullRequest)
 closedPullRequestsSince params@DeltaParams { .. } since = do
   response' <- GH.executeRequest deltaAuth $
-                 GH.pullRequestsForR deltaOwner deltaRepo GH.defaultListPullRequestsParams (Just 100)
+                 GH.pullRequestsForR deltaOwner deltaRepo params (Just 100)
   case response' of
     Left err  -> error $ show err
     Right prs -> return $ V.takeWhile hasSinceBeenMerged prs
 
   where
+    params :: GH.PullRequestOptions
+    params = GH.defaultPullRequestOptions
+      & GH.setPullRequestOptionsState GH.PullRequestStateClosed
+
     hasSinceBeenMerged :: GH.SimplePullRequest -> Bool
     hasSinceBeenMerged pr =
       case GH.simplePullRequestMergedAt pr of
@@ -99,4 +104,4 @@ toEvent pr = Event author title link
     title = GH.simplePullRequestTitle pr
 
     link :: Text
-    link = GH.pullRequestLinksHtml $ GH.simplePullRequestLinks pr
+    link = GH.getUrl $ GH.pullRequestLinksHtml $ GH.simplePullRequestLinks pr
