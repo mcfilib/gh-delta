@@ -2,16 +2,23 @@
 
 module Main where
 
-import           Data.Maybe          (fromMaybe)
-import           Data.String         (fromString)
-import qualified GitHub              as GH
-import           Lib                 (DeltaParams (..), generate)
+import           Control.Applicative ((<|>))
+import           Data.Function       ((&))
+import           Lib                 (DeltaParams, defaultDeltaParams, generate,
+                                      setDeltaParamsAuth, setDeltaParamsOwner,
+                                      setDeltaParamsRepo, setDeltaParamsSince)
 import           Options.Applicative (Parser, ParserInfo, execParser, fullDesc,
                                       header, help, helper, info, long,
                                       optional, progDesc, strOption, (<>))
 import           System.Environment  (lookupEnv)
 
-data CLIOpts = CLIOpts { auth :: Maybe String, owner :: String, repo :: String, since :: String }
+data CLIOpts =
+       CLIOpts
+         { cliAuth  :: Maybe String
+         , cliOwner :: String
+         , cliRepo  :: String
+         , cliSince :: String
+         }
 
 cliOpts :: ParserInfo CLIOpts
 cliOpts =
@@ -34,18 +41,15 @@ cliOptsParser =
 runCli :: CLIOpts -> IO ()
 runCli CLIOpts { .. } = do
   envAuth <- lookupEnv "GH_DELTA_AUTH"
-  generate $
-    case (envAuth, auth) of
-      (Just x, _) -> params x
-      (_, Just x) -> params x
-      _           -> error "set GH_DELTA_AUTH environment variable or specify --auth"
+  generate $ params (envAuth <|> cliAuth)
 
   where
-    params authToken = DeltaParams
-                         (GH.OAuth . fromString $ authToken)
-                         (fromString owner)
-                         (fromString repo)
-                         (fromString since)
+    params :: Maybe String -> DeltaParams
+    params mbAuthToken = defaultDeltaParams
+                         & setDeltaParamsAuth mbAuthToken
+                         & setDeltaParamsOwner cliOwner
+                         & setDeltaParamsRepo cliRepo
+                         & setDeltaParamsSince cliSince
 
 main :: IO ()
 main = execParser cliOpts >>= runCli
