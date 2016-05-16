@@ -2,7 +2,6 @@
 
 module Main where
 
-import           Data.Maybe          (fromMaybe)
 import           Data.String         (fromString)
 import qualified GitHub              as GH
 import           Lib                 (DeltaParams (..), generate)
