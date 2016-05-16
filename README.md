@@ -17,6 +17,7 @@ gh-delta --owner username --repo reponame --since sha --auth token > CHANGELOG.m
 ```
 % make
 clean                          Clean Haskell local packages
+format                         Format Haskell source
 help                           Print available tasks
 install                        Compile Haskell binary
 repl                           Launch ghci
