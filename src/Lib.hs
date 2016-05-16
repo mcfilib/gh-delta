@@ -67,7 +67,7 @@ commitDate DeltaParams { .. } = do
 closedPullRequestsSince :: DeltaParams -> UTCTime -> IO (Vector GH.SimplePullRequest)
 closedPullRequestsSince params@DeltaParams { .. } since = do
   response' <- GH.executeRequest deltaAuth $
-                 GH.pullRequestsForR deltaOwner deltaRepo params (Just 100)
+                 GH.pullRequestsForR deltaOwner deltaRepo params Nothing
   case response' of
     Left err  -> error $ show err
     Right prs -> return $ V.takeWhile hasSinceBeenMerged prs
