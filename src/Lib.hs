@@ -5,17 +5,17 @@
 
 module Lib (generate, DeltaParams(..)) where
 
-import           Control.Monad (unless)
-import           Data.FileEmbed (embedStringFile)
-import           Data.Function ((&))
-import           Data.Generics (Data, Typeable)
-import           Data.Text (Text, pack)
-import qualified Data.Text.Lazy.IO as TL
-import           Data.Time.Clock (UTCTime)
-import           Data.Time.Format (defaultTimeLocale, formatTime)
-import           Data.Vector (Vector)
-import qualified Data.Vector as V
-import qualified GitHub as GH
+import           Control.Monad         (unless)
+import           Data.FileEmbed        (embedStringFile)
+import           Data.Function         ((&))
+import           Data.Generics         (Data, Typeable)
+import           Data.Text             (Text, pack)
+import qualified Data.Text.Lazy.IO     as TL
+import           Data.Time.Clock       (UTCTime)
+import           Data.Time.Format      (defaultTimeLocale, formatTime)
+import           Data.Vector           (Vector)
+import qualified Data.Vector           as V
+import qualified GitHub                as GH
 import           Text.Hastache         (MuContext, defaultConfig, encodeStr,
                                         hastacheStr)
 import           Text.Hastache.Context (mkGenericContext)
@@ -75,7 +75,7 @@ closedPullRequestsSince params@DeltaParams { .. } since = do
   where
     params :: GH.PullRequestOptions
     params = GH.defaultPullRequestOptions
-      & GH.setPullRequestOptionsState GH.PullRequestStateClosed
+             & GH.setPullRequestOptionsState GH.PullRequestStateClosed
 
     hasSinceBeenMerged :: GH.SimplePullRequest -> Bool
     hasSinceBeenMerged pr =
