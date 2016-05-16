@@ -4,7 +4,7 @@ module Main where
 
 import           Data.String         (fromString)
 import qualified GitHub              as GH
-import           Lib                 (generate)
+import           Lib                 (DeltaParams (..), generate)
 import           Options.Applicative (Parser, ParserInfo, execParser, fullDesc,
                                       header, help, helper, info, long,
                                       progDesc, strOption, (<>))
@@ -30,8 +30,10 @@ cliOptsParser =
                          <> help "Since SHA")
 
 runCli :: CLIOpts -> IO ()
-runCli CLIOpts { .. } = generate (GH.OAuth . fromString $ auth) (fromString owner) (fromString repo)
-                          (fromString since)
+runCli CLIOpts { .. } = generate params
+  where
+    params = DeltaParams (GH.OAuth . fromString $ auth) (fromString owner) (fromString repo)
+               (fromString since)
 
 main :: IO ()
 main = execParser cliOpts >>= runCli
