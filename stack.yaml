@@ -5,7 +5,7 @@ install-ghc: true
 packages:
 - '.'
 - location:
-    git: git@github.com:phadej/github.git
+    git: git@github.com:iconnect/github.git
     commit: "06f5112344fce5cba831cc71cdcf7fc5320112c8"
 extra-deps: []
 flags: {}
