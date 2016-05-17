@@ -6,7 +6,8 @@ import           Control.Applicative ((<|>))
 import           Data.Function       ((&))
 import           Lib                 (DeltaParams, defaultDeltaParams, generate,
                                       setDeltaParamsAuth, setDeltaParamsOwner,
-                                      setDeltaParamsRepo, setDeltaParamsSince)
+                                      setDeltaParamsRepo, setDeltaParamsSince,
+                                      setDeltaParamsVersion)
 import           Options.Applicative (Parser, ParserInfo, execParser, fullDesc,
                                       header, help, helper, info, long,
                                       optional, progDesc, strOption, (<>))
@@ -14,10 +15,11 @@ import           System.Environment  (lookupEnv)
 
 data CLIOpts =
        CLIOpts
-         { cliAuth  :: Maybe String
-         , cliOwner :: String
-         , cliRepo  :: String
-         , cliSince :: String
+         { cliAuth    :: Maybe String
+         , cliOwner   :: String
+         , cliRepo    :: String
+         , cliSince   :: String
+         , cliVersion :: Maybe String
          }
 
 cliOpts :: ParserInfo CLIOpts
@@ -37,6 +39,8 @@ cliOptsParser =
                          <> help "Repository name")
           <*> strOption (long "since"
                          <> help "Since SHA")
+          <*> optional (strOption (long "version"
+                                   <> help "Version for changelog entry"))
 
 runCli :: CLIOpts -> IO ()
 runCli CLIOpts { .. } = do
@@ -50,6 +54,7 @@ runCli CLIOpts { .. } = do
                          & setDeltaParamsOwner cliOwner
                          & setDeltaParamsRepo cliRepo
                          & setDeltaParamsSince cliSince
+                         & setDeltaParamsVersion cliVersion
 
 main :: IO ()
 main = execParser cliOpts >>= runCli
