@@ -84,7 +84,7 @@ commitDate DeltaParams { .. } = do
 closedPullRequestsSince :: DeltaParams -> UTCTime -> IO (Vector GH.SimplePullRequest)
 closedPullRequestsSince DeltaParams { .. } since = do
   response <- GH.executeRequestMaybe deltaAuth $
-                 GH.pullRequestsForR deltaOwner deltaRepo opts (Just 100)
+                GH.pullRequestsForR deltaOwner deltaRepo opts (Just 100)
   case response of
     Left err  -> error $ show err
     Right prs -> return $ V.filter hasSinceBeenMerged prs
@@ -102,22 +102,27 @@ closedPullRequestsSince DeltaParams { .. } since = do
 
 -- | Render internal representation as markdown.
 template :: Delta -> Text
-template Delta { .. } = T.intercalate " "
-                          [ "##"
-                          , deltaDate
-                          , "\n"
-                          , T.intercalate " " $ fmap eventTemplate deltaEvents
-                          ]
+template Delta { .. } = titleTemplate <>
+                        newLine <>
+                        newLine <>
+                        T.intercalate "\n" (fmap eventTemplate deltaEvents)
   where
     eventTemplate :: Event -> Text
-    eventTemplate Event { .. } = T.intercalate " " [eventTitle, "-", "@" <> eventAuthor, eventLink]
+    eventTemplate Event { .. } = T.intercalate " "
+                                   ["*", eventTitle, "-", "@" <> eventAuthor, eventLink]
+
+    newLine :: Text
+    newLine = "\n"
+
+    titleTemplate :: Text
+    titleTemplate = T.intercalate " " ["##", deltaDate]
 
 -- | Convert collection of pull requests to internal representation.
 toDelta :: UTCTime -> Vector GH.SimplePullRequest -> Delta
 toDelta start prs = Delta date events
   where
     date :: Text
-    date = T.pack $ formatTime defaultTimeLocale "%d %b %Y" start
+    date = T.pack $ formatTime defaultTimeLocale "%Y-%m-%d" start
 
     events :: [Event]
     events = V.toList $ fmap toEvent prs
