@@ -17,9 +17,7 @@ library
   exposed-modules:     Lib
   build-depends:       base >= 4.7 && < 5
                      , aeson >= 0.11
-                     , file-embed
                      , github
-                     , hastache
                      , syb
                      , text
                      , time
