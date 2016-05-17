@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE RecordWildCards   #-}
 
 module Lib (
@@ -10,6 +9,7 @@ module Lib (
     setDeltaParamsOwner,
     setDeltaParamsRepo,
     setDeltaParamsSince,
+    setDeltaParamsUntil,
     setDeltaParamsVersion,
     ) where
 
@@ -21,7 +21,7 @@ import           Data.String      (fromString)
 import           Data.Text        (Text)
 import qualified Data.Text        as T
 import qualified Data.Text.IO     as T
-import           Data.Time.Clock  (UTCTime)
+import           Data.Time.Clock  (UTCTime, getCurrentTime)
 import           Data.Time.Format (defaultTimeLocale, formatTime)
 import           Data.Vector      (Vector)
 import qualified Data.Vector      as V
@@ -34,13 +34,14 @@ data DeltaParams =
          , deltaParamsOwner   :: GH.Name GH.Owner
          , deltaParamsRepo    :: GH.Name GH.Repo
          , deltaParamsSince   :: GH.Name GH.GitCommit
+         , deltaParamsUntil   :: Maybe (GH.Name GH.GitCommit)
          , deltaParamsVersion :: Maybe Text
          }
 
 -- | Default params using the gh-delta repo.
 defaultDeltaParams :: DeltaParams
 defaultDeltaParams =
-  DeltaParams Nothing "filib" "gh-delta" "f44caa05adf066ae441cbdbebe54010d94172e9a" Nothing
+  DeltaParams Nothing "filib" "gh-delta" "f44caa05adf066ae441cbdbebe54010d94172e9a" Nothing Nothing
 
 -- | Setter for personal access token.
 setDeltaParamsAuth :: Maybe String -> DeltaParams -> DeltaParams
@@ -54,9 +55,13 @@ setDeltaParamsOwner x params = params { deltaParamsOwner = fromString x }
 setDeltaParamsRepo :: String -> DeltaParams -> DeltaParams
 setDeltaParamsRepo x params = params { deltaParamsRepo = fromString x }
 
--- | Setter for SHA.
+-- | Setter for SHA since
 setDeltaParamsSince :: String -> DeltaParams -> DeltaParams
 setDeltaParamsSince x params = params { deltaParamsSince = fromString x }
+
+-- | Setter for SHA until.
+setDeltaParamsUntil :: Maybe String -> DeltaParams -> DeltaParams
+setDeltaParamsUntil x params = params { deltaParamsUntil = fmap fromString x }
 
 -- | Setter for version.
 setDeltaParamsVersion :: Maybe String -> DeltaParams -> DeltaParams
@@ -66,33 +71,54 @@ setDeltaParamsVersion x params = params { deltaParamsVersion = fmap fromString x
 data Event = Event { eventAuthor :: Text, eventTitle :: Text, eventLink :: Text }
 
 -- | Single changelog entry.
-data Delta = Delta { deltaDate :: Text, deltaEvents :: [Event], deltaVersion :: Maybe Text }
+data Delta =
+       Delta
+         { deltaDateSince :: Text
+         , deltaDateUntil :: Text
+         , deltaEvents    :: [Event]
+         , deltaVersion   :: Maybe Text
+         }
 
 -- | Write changelog entry since SHA to STDOUT.
 generate :: DeltaParams -> IO ()
 generate params@DeltaParams { .. } = do
-  response <- commitDate params
-  case response of
-    Left err -> error $ show err
-    Right start -> do
-      prs <- closedPullRequestsSince params start
+  dateSinceResponse <- commitDate params deltaParamsSince
+  case dateSinceResponse of
+    Left err -> renderError err
+    Right dateSince -> do
+      prs <- closedPullRequestsSince params dateSince
       unless (V.null prs) $
-        T.putStrLn $ template (toDelta start prs deltaParamsVersion)
+        case deltaParamsUntil of
+          Just sha -> do
+            dateUntilResponse <- commitDate params sha
+            case dateUntilResponse of
+              Left err        -> renderError err
+              Right dateUntil -> renderTemplate dateSince dateUntil prs
+          Nothing -> do
+            dateUntil <- getCurrentTime
+            renderTemplate dateSince dateUntil prs
+
+  where
+    renderError :: GH.Error -> IO ()
+    renderError err = error $ show err
+
+    renderTemplate :: UTCTime -> UTCTime -> Vector GH.SimplePullRequest -> IO ()
+    renderTemplate x y z = T.putStrLn $ template (toDelta x y z deltaParamsVersion)
 
 -- | Get date a commit was created.
-commitDate :: DeltaParams -> IO (Either GH.Error UTCTime)
-commitDate DeltaParams { .. } = do
+commitDate :: DeltaParams -> GH.Name GH.GitCommit -> IO (Either GH.Error UTCTime)
+commitDate DeltaParams { .. } sha = do
   response <- GH.executeRequestMaybe deltaParamsAuth $ GH.gitCommitR
                                                          deltaParamsOwner
                                                          deltaParamsRepo
-                                                         deltaParamsSince
+                                                         sha
   case response of
     Left err     -> return $ Left err
     Right commit -> return $ Right (GH.gitUserDate $ GH.gitCommitAuthor commit)
 
 -- | Get pull requests closed since a given date.
 closedPullRequestsSince :: DeltaParams -> UTCTime -> IO (Vector GH.SimplePullRequest)
-closedPullRequestsSince DeltaParams { .. } since = do
+closedPullRequestsSince DeltaParams { .. } dateSince = do
   response <- GH.executeRequestMaybe deltaParamsAuth $
                 GH.pullRequestsForR deltaParamsOwner deltaParamsRepo opts (Just 100)
   case response of
@@ -107,7 +133,7 @@ closedPullRequestsSince DeltaParams { .. } since = do
     hasSinceBeenMerged :: GH.SimplePullRequest -> Bool
     hasSinceBeenMerged pr =
       case GH.simplePullRequestMergedAt pr of
-        Just mergedAt -> since < mergedAt
+        Just mergedAt -> dateSince < mergedAt
         _             -> False
 
 -- | Render internal representation as markdown.
@@ -115,7 +141,7 @@ template :: Delta -> Text
 template Delta { .. } = titleTemplate <>
                         newLine <>
                         newLine <>
-                        T.intercalate newLine (fmap eventTemplate deltaEvents)
+                        T.intercalate newLine (eventTemplate <$> deltaEvents)
   where
     eventTemplate :: Event -> Text
     eventTemplate Event { .. } = T.intercalate space
@@ -128,17 +154,18 @@ template Delta { .. } = titleTemplate <>
     space = " "
 
     titleTemplate :: Text
-    titleTemplate = T.intercalate space ["##", versionTemplate, deltaDate]
+    titleTemplate = T.intercalate space
+                      ["##", versionTemplate, deltaDateSince, "to", deltaDateUntil]
 
     versionTemplate :: Text
-    versionTemplate = fromMaybe "Unreleased" deltaVersion
+    versionTemplate = "[" <> fromMaybe "Unreleased" deltaVersion <> "]"
 
 -- | Convert collection of pull requests to internal representation.
-toDelta :: UTCTime -> Vector GH.SimplePullRequest -> Maybe Text -> Delta
-toDelta start prs = Delta date events
+toDelta :: UTCTime -> UTCTime -> Vector GH.SimplePullRequest -> Maybe Text -> Delta
+toDelta dateSince dateUntil prs = Delta (formatDate dateSince) (formatDate dateUntil) events
   where
-    date :: Text
-    date = T.pack $ formatTime defaultTimeLocale "%Y-%m-%d" start
+    formatDate :: UTCTime -> Text
+    formatDate x = T.pack $ formatTime defaultTimeLocale "%Y-%m-%d" x
 
     events :: [Event]
     events = V.toList $ fmap toEvent prs

@@ -7,6 +7,7 @@ import           Data.Function       ((&))
 import           Lib                 (DeltaParams, defaultDeltaParams, generate,
                                       setDeltaParamsAuth, setDeltaParamsOwner,
                                       setDeltaParamsRepo, setDeltaParamsSince,
+                                      setDeltaParamsUntil,
                                       setDeltaParamsVersion)
 import           Options.Applicative (Parser, ParserInfo, execParser, fullDesc,
                                       header, help, helper, info, long,
@@ -19,6 +20,7 @@ data CLIOpts =
          , cliOwner   :: String
          , cliRepo    :: String
          , cliSince   :: String
+         , cliUntil   :: Maybe String
          , cliVersion :: Maybe String
          }
 
@@ -39,6 +41,8 @@ cliOptsParser =
                          <> help "Repository name")
           <*> strOption (long "since"
                          <> help "Since SHA")
+          <*> optional (strOption (long "until"
+                                   <> help "Until SHA"))
           <*> optional (strOption (long "version"
                                    <> help "Version for changelog entry"))
 
@@ -54,6 +58,7 @@ runCli CLIOpts { .. } = do
                          & setDeltaParamsOwner cliOwner
                          & setDeltaParamsRepo cliRepo
                          & setDeltaParamsSince cliSince
+                         & setDeltaParamsUntil cliUntil
                          & setDeltaParamsVersion cliVersion
 
 main :: IO ()
