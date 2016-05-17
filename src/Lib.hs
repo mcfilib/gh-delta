@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE RecordWildCards   #-}
 
 module Lib (
@@ -83,22 +82,36 @@ data Delta =
 -- | Write changelog entry since SHA to STDOUT.
 generate :: DeltaParams -> IO ()
 generate params@DeltaParams { .. } = do
-  dateSinceResponse <- commitDate params
-  dateUntil <- getCurrentTime
+  dateSinceResponse <- commitDate params deltaParamsSince
   case dateSinceResponse of
-    Left err -> error $ show err
+    Left err -> renderError err
     Right dateSince -> do
       prs <- closedPullRequestsSince params dateSince
       unless (V.null prs) $
-        T.putStrLn $ template (toDelta dateSince dateUntil prs deltaParamsVersion)
+        case deltaParamsUntil of
+          Just sha -> do
+            dateUntilResponse <- commitDate params sha
+            case dateUntilResponse of
+              Left err        -> renderError err
+              Right dateUntil -> renderTemplate dateSince dateUntil prs
+          Nothing -> do
+            dateUntil <- getCurrentTime
+            renderTemplate dateSince dateUntil prs
+
+  where
+    renderError :: GH.Error -> IO ()
+    renderError err = error $ show err
+
+    renderTemplate :: UTCTime -> UTCTime -> Vector GH.SimplePullRequest -> IO ()
+    renderTemplate x y z = T.putStrLn $ template (toDelta x y z deltaParamsVersion)
 
 -- | Get date a commit was created.
-commitDate :: DeltaParams -> IO (Either GH.Error UTCTime)
-commitDate DeltaParams { .. } = do
+commitDate :: DeltaParams -> GH.Name GH.GitCommit -> IO (Either GH.Error UTCTime)
+commitDate DeltaParams { .. } sha = do
   response <- GH.executeRequestMaybe deltaParamsAuth $ GH.gitCommitR
                                                          deltaParamsOwner
                                                          deltaParamsRepo
-                                                         deltaParamsSince
+                                                         sha
   case response of
     Left err     -> return $ Left err
     Right commit -> return $ Right (GH.gitUserDate $ GH.gitCommitAuthor commit)
