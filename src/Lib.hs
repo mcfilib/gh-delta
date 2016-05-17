@@ -85,20 +85,24 @@ generate params@DeltaParams { .. } = do
   dateSinceResponse <- commitDate params deltaParamsSince
   case dateSinceResponse of
     Left err -> renderError err
-    Right dateSince -> do
-      prs <- closedPullRequestsSince params dateSince
-      unless (V.null prs) $
-        case deltaParamsUntil of
-          Just sha -> do
-            dateUntilResponse <- commitDate params sha
-            case dateUntilResponse of
-              Left err        -> renderError err
-              Right dateUntil -> renderTemplate dateSince dateUntil prs
-          Nothing -> do
-            dateUntil <- getCurrentTime
-            renderTemplate dateSince dateUntil prs
+    Right dateSince ->
+      case deltaParamsUntil of
+        Just sha -> do
+          dateUntilResponse <- commitDate params sha
+          case dateUntilResponse of
+            Left err -> renderError err
+            Right dateUntil -> do
+              pullRequests <- fetchPullRequests dateSince dateUntil
+              renderTemplate dateSince dateUntil pullRequests
+        Nothing -> do
+          dateUntil <- getCurrentTime
+          pullRequests <- fetchPullRequests dateSince dateUntil
+          renderTemplate dateSince dateUntil pullRequests
 
   where
+    fetchPullRequests :: UTCTime -> UTCTime -> IO (Vector GH.SimplePullRequest)
+    fetchPullRequests = closedPullRequestsSince params
+
     renderError :: GH.Error -> IO ()
     renderError err = error $ show err
 
@@ -117,8 +121,8 @@ commitDate DeltaParams { .. } sha = do
     Right commit -> return $ Right (GH.gitUserDate $ GH.gitCommitAuthor commit)
 
 -- | Get pull requests closed since a given date.
-closedPullRequestsSince :: DeltaParams -> UTCTime -> IO (Vector GH.SimplePullRequest)
-closedPullRequestsSince DeltaParams { .. } dateSince = do
+closedPullRequestsSince :: DeltaParams -> UTCTime -> UTCTime -> IO (Vector GH.SimplePullRequest)
+closedPullRequestsSince DeltaParams { .. } dateSince dateUntil = do
   response <- GH.executeRequestMaybe deltaParamsAuth $
                 GH.pullRequestsForR deltaParamsOwner deltaParamsRepo opts (Just 100)
   case response of
@@ -133,7 +137,7 @@ closedPullRequestsSince DeltaParams { .. } dateSince = do
     hasSinceBeenMerged :: GH.SimplePullRequest -> Bool
     hasSinceBeenMerged pr =
       case GH.simplePullRequestMergedAt pr of
-        Just mergedAt -> dateSince < mergedAt
+        Just mergedAt -> mergedAt > dateSince && mergedAt < dateUntil
         _             -> False
 
 -- | Render internal representation as markdown.
