@@ -11,7 +11,8 @@ Simple, opinionated, Github changelog generator written in Haskell.
 ```
 gh-delta - changelog generator
 
-Usage: gh-delta [--auth ARG] --owner ARG --repo ARG --since ARG [--version ARG]
+Usage: gh-delta [--auth ARG] --owner ARG --repo ARG --since ARG [--until ARG]
+                [--version ARG]
   Simple, opinionated, Github changelog generator written in Haskell
 
 Available options:
@@ -20,18 +21,29 @@ Available options:
   --owner ARG              Repository owner
   --repo ARG               Repository name
   --since ARG              Since SHA
+  --until ARG              Until SHA
   --version ARG            Version for changelog entry
-```
-
-## Example
-
-```
-gh-delta --owner username --repo reponame --since sha --auth token > CHANGELOG.md
 ```
 
 You may also specify your
 [personal access token](https://github.com/settings/tokens/new) by specifying it
 in the `GH_DELTA_AUTH` environment variable.
+
+## Example
+
+```
+gh-delta --owner filib --repo gh-delta --since f44caa05adf066ae441cbdbebe54010d94172e9a --version 0.1.0.0
+```
+
+```
+## [0.1.0.0] 2016-05-14 to 2016-05-17
+
+* Add version param to CLI and render - @filib https://github.com/filib/gh-delta/pull/5
+* Refactor to expose setter of datatype - @filib https://github.com/filib/gh-delta/pull/4
+* Make it possible to set personal token in ENV - @filib https://github.com/filib/gh-delta/pull/3
+* Configure to use PullRequestOptions - @filib https://github.com/filib/gh-delta/pull/2
+* Minor cleanup - @filib https://github.com/filib/gh-delta/pull/1
+```
 
 ## Development
 
