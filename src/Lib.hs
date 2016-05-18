@@ -13,7 +13,6 @@ module Lib (
     setDeltaParamsVersion,
     ) where
 
-import           Control.Monad    (unless)
 import           Data.Function    ((&))
 import           Data.Maybe       (fromMaybe)
 import           Data.Monoid      ((<>))
@@ -26,6 +25,7 @@ import           Data.Time.Format (defaultTimeLocale, formatTime)
 import           Data.Vector      (Vector)
 import qualified Data.Vector      as V
 import qualified GitHub           as GH
+import           System.Exit      (die)
 
 -- | Parameters required to generate a Delta.
 data DeltaParams =
@@ -104,7 +104,7 @@ generate params@DeltaParams { .. } = do
     fetchPullRequests = closedPullRequestsSince params
 
     renderError :: GH.Error -> IO ()
-    renderError err = error $ show err
+    renderError err = die $ show err
 
     renderTemplate :: UTCTime -> UTCTime -> Vector GH.SimplePullRequest -> IO ()
     renderTemplate x y z = T.putStrLn $ template (toDelta x y z deltaParamsVersion)
