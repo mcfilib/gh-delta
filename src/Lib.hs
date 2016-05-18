@@ -10,7 +10,7 @@ module Lib (
     setDeltaParamsRepo,
     setDeltaParamsSince,
     setDeltaParamsUntil,
-    setDeltaParamsVersion,
+    setDeltaParamsLabel,
     ) where
 
 import           Data.Function    ((&))
@@ -28,12 +28,12 @@ import qualified GitHub           as GH
 -- | Parameters required to generate a Delta.
 data DeltaParams =
        DeltaParams
-         { deltaParamsAuth    :: Maybe GH.Auth
-         , deltaParamsOwner   :: GH.Name GH.Owner
-         , deltaParamsRepo    :: GH.Name GH.Repo
-         , deltaParamsSince   :: GH.Name GH.GitCommit
-         , deltaParamsUntil   :: Maybe (GH.Name GH.GitCommit)
-         , deltaParamsVersion :: Maybe Text
+         { deltaParamsAuth  :: Maybe GH.Auth
+         , deltaParamsOwner :: GH.Name GH.Owner
+         , deltaParamsRepo  :: GH.Name GH.Repo
+         , deltaParamsSince :: GH.Name GH.GitCommit
+         , deltaParamsUntil :: Maybe (GH.Name GH.GitCommit)
+         , deltaParamsLabel :: Maybe Text
          }
 
 -- | Default params using the gh-delta repo.
@@ -61,9 +61,9 @@ setDeltaParamsSince x params = params { deltaParamsSince = fromString x }
 setDeltaParamsUntil :: Maybe String -> DeltaParams -> DeltaParams
 setDeltaParamsUntil x params = params { deltaParamsUntil = fmap fromString x }
 
--- | Setter for version.
-setDeltaParamsVersion :: Maybe String -> DeltaParams -> DeltaParams
-setDeltaParamsVersion x params = params { deltaParamsVersion = fmap fromString x }
+-- | Setter for label.
+setDeltaParamsLabel :: Maybe String -> DeltaParams -> DeltaParams
+setDeltaParamsLabel x params = params { deltaParamsLabel = fmap fromString x }
 
 -- | Single event in a changelog.
 data Event = Event { eventAuthor :: Text, eventTitle :: Text, eventLink :: Text }
@@ -74,7 +74,7 @@ data Delta =
          { deltaDateSince :: Text
          , deltaDateUntil :: Text
          , deltaEvents    :: [Event]
-         , deltaVersion   :: Maybe Text
+         , deltaLabel     :: Maybe Text
          }
 
 -- | Generate changelog or produce a meaningful error.
@@ -105,7 +105,7 @@ generate params@DeltaParams { .. } = do
     renderError = show
 
     renderTemplate :: UTCTime -> UTCTime -> Vector GH.SimplePullRequest -> Text
-    renderTemplate x y z = template (toDelta x y z deltaParamsVersion)
+    renderTemplate x y z = template (toDelta x y z deltaParamsLabel)
 
     failure :: (Monad m) => a -> m (Either a b)
     failure = return . Left
@@ -162,11 +162,10 @@ template Delta { .. } = titleTemplate <>
     space = " "
 
     titleTemplate :: Text
-    titleTemplate = T.intercalate space
-                      ["##", versionTemplate, deltaDateSince, "to", deltaDateUntil]
+    titleTemplate = T.intercalate space ["##", labelTemplate, deltaDateSince, "to", deltaDateUntil]
 
-    versionTemplate :: Text
-    versionTemplate = "[" <> fromMaybe "Unreleased" deltaVersion <> "]"
+    labelTemplate :: Text
+    labelTemplate = "[" <> fromMaybe "Unreleased" deltaLabel <> "]"
 
 -- | Convert collection of pull requests to internal representation.
 toDelta :: UTCTime -> UTCTime -> Vector GH.SimplePullRequest -> Maybe Text -> Delta

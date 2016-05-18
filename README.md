@@ -12,7 +12,7 @@ Simple, opinionated, Github changelog generator written in Haskell.
 gh-delta - changelog generator
 
 Usage: gh-delta [--auth ARG] --owner ARG --repo ARG --since ARG [--until ARG]
-                [--version ARG]
+                [--label ARG]
   Simple, opinionated, Github changelog generator written in Haskell
 
 Available options:
@@ -22,7 +22,7 @@ Available options:
   --repo ARG               Repository name
   --since ARG              Since SHA
   --until ARG              Until SHA
-  --version ARG            Version for changelog entry
+  --label ARG            Label for changelog entry
 ```
 
 You may also specify your
@@ -32,7 +32,7 @@ in the `GH_DELTA_AUTH` environment variable.
 ## Example
 
 ```
-gh-delta --owner filib --repo gh-delta --since f44caa05adf066ae441cbdbebe54010d94172e9a --version 0.1.0.0
+gh-delta --owner filib --repo gh-delta --since f44caa05adf066ae441cbdbebe54010d94172e9a --label 0.1.0.0
 ```
 
 ```
