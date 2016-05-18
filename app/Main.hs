@@ -4,6 +4,7 @@ module Main where
 
 import           Control.Applicative ((<|>))
 import           Data.Function       ((&))
+import qualified Data.Text.IO        as T
 import           Lib                 (DeltaParams, defaultDeltaParams, generate,
                                       setDeltaParamsAuth, setDeltaParamsOwner,
                                       setDeltaParamsRepo, setDeltaParamsSince,
@@ -13,6 +14,7 @@ import           Options.Applicative (Parser, ParserInfo, execParser, fullDesc,
                                       header, help, helper, info, long,
                                       optional, progDesc, strOption, (<>))
 import           System.Environment  (lookupEnv)
+import           System.Exit         (die)
 
 data CLIOpts =
        CLIOpts
@@ -49,7 +51,10 @@ cliOptsParser =
 runCli :: CLIOpts -> IO ()
 runCli CLIOpts { .. } = do
   envAuth <- lookupEnv "GH_DELTA_AUTH"
-  generate $ params (envAuth <|> cliAuth)
+  result <- generate $ params (envAuth <|> cliAuth)
+  case result of
+    Left err        -> die err
+    Right changelog -> T.putStrLn changelog
 
   where
     params :: Maybe String -> DeltaParams
