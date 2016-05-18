@@ -19,13 +19,11 @@ import           Data.Monoid      ((<>))
 import           Data.String      (fromString)
 import           Data.Text        (Text)
 import qualified Data.Text        as T
-import qualified Data.Text.IO     as T
 import           Data.Time.Clock  (UTCTime, getCurrentTime)
 import           Data.Time.Format (defaultTimeLocale, formatTime)
 import           Data.Vector      (Vector)
 import qualified Data.Vector      as V
 import qualified GitHub           as GH
-import           System.Exit      (die)
 
 -- | Parameters required to generate a Delta.
 data DeltaParams =
@@ -79,35 +77,41 @@ data Delta =
          , deltaVersion   :: Maybe Text
          }
 
--- | Write changelog entry since SHA to STDOUT.
-generate :: DeltaParams -> IO ()
+-- | Generate changelog or produce a meaningful error.
+generate :: DeltaParams -> IO (Either String Text)
 generate params@DeltaParams { .. } = do
   dateSinceResponse <- commitDate params deltaParamsSince
   case dateSinceResponse of
-    Left err -> renderError err
+    Left err -> failure $ renderError err
     Right dateSince ->
       case deltaParamsUntil of
         Just sha -> do
           dateUntilResponse <- commitDate params sha
           case dateUntilResponse of
-            Left err -> renderError err
+            Left err -> failure $ renderError err
             Right dateUntil -> do
               pullRequests <- fetchPullRequests dateSince dateUntil
-              renderTemplate dateSince dateUntil pullRequests
+              success $ renderTemplate dateSince dateUntil pullRequests
         Nothing -> do
           dateUntil <- getCurrentTime
           pullRequests <- fetchPullRequests dateSince dateUntil
-          renderTemplate dateSince dateUntil pullRequests
+          success $ renderTemplate dateSince dateUntil pullRequests
 
   where
     fetchPullRequests :: UTCTime -> UTCTime -> IO (Vector GH.SimplePullRequest)
     fetchPullRequests = closedPullRequestsSince params
 
-    renderError :: GH.Error -> IO ()
-    renderError err = die $ show err
+    renderError :: (Show a) => a -> String
+    renderError = show
 
-    renderTemplate :: UTCTime -> UTCTime -> Vector GH.SimplePullRequest -> IO ()
-    renderTemplate x y z = T.putStrLn $ template (toDelta x y z deltaParamsVersion)
+    renderTemplate :: UTCTime -> UTCTime -> Vector GH.SimplePullRequest -> Text
+    renderTemplate x y z = template (toDelta x y z deltaParamsVersion)
+
+    failure :: (Monad m) => a -> m (Either a b)
+    failure = return . Left
+
+    success :: (Monad m) => b -> m (Either a b)
+    success = return . Right
 
 -- | Get date a commit was created.
 commitDate :: DeltaParams -> GH.Name GH.GitCommit -> IO (Either GH.Error UTCTime)
