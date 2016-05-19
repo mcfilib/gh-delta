@@ -11,8 +11,8 @@ Simple, opinionated, Github changelog generator written in Haskell.
 ```
 gh-delta - changelog generator
 
-Usage: gh-delta [-v|--version] [--auth ARG] --owner ARG --repo ARG --since ARG
-                [--until ARG] [--label ARG]
+Usage: gh-delta [--auth ARG] --owner ARG --repo ARG --since ARG [--until ARG]
+                [--label ARG]
   Simple, opinionated, Github changelog generator written in Haskell
 
 Available options:

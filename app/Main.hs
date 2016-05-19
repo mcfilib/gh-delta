@@ -11,9 +11,9 @@ import           Lib                 (DeltaParams, defaultDeltaParams, generate,
                                       setDeltaParamsOwner, setDeltaParamsRepo,
                                       setDeltaParamsSince, setDeltaParamsUntil)
 import           Options.Applicative (Parser, ParserInfo, execParser, fullDesc,
-                                      header, help, helper, info, infoOption,
-                                      long, optional, progDesc, short,
-                                      strOption, (<>))
+                                      header, help, helper, hidden, info,
+                                      infoOption, long, optional, progDesc,
+                                      short, strOption, (<>))
 import           Paths_gh_delta      (version)
 import           System.Environment  (lookupEnv)
 import           System.Exit         (die)
@@ -37,7 +37,7 @@ cliOpts =
 
 cliVersion :: Parser (a -> a)
 cliVersion = infoOption (showVersion version)
-               (long "version" <> short 'v' <> help "Show version information")
+               (long "version" <> short 'v' <> help "Show version information" <> hidden)
 
 cliOptsParser :: Parser CLIOpts
 cliOptsParser =
