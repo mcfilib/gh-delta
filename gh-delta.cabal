@@ -1,5 +1,5 @@
 name:                gh-delta
-version:             0.1.0.0
+version:             0.0.0.0
 synopsis:            Generate changelogs from Github
 description:         Please see README.md
 homepage:            https://github.com/githubuser/delta#readme

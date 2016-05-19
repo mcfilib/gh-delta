@@ -11,18 +11,19 @@ Simple, opinionated, Github changelog generator written in Haskell.
 ```
 gh-delta - changelog generator
 
-Usage: gh-delta [--auth ARG] --owner ARG --repo ARG --since ARG [--until ARG]
-                [--label ARG]
+Usage: gh-delta [-v|--version] [--auth ARG] --owner ARG --repo ARG --since ARG
+                [--until ARG] [--label ARG]
   Simple, opinionated, Github changelog generator written in Haskell
 
 Available options:
   -h,--help                Show this help text
+  -v,--version             Show version information
   --auth ARG               Personal access token
   --owner ARG              Repository owner
   --repo ARG               Repository name
   --since ARG              Since SHA
   --until ARG              Until SHA
-  --label ARG            Label for changelog entry
+  --label ARG              Label for changelog entry
 ```
 
 You may also specify your

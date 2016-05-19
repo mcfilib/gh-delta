@@ -5,13 +5,16 @@ module Main where
 import           Control.Applicative ((<|>))
 import           Data.Function       ((&))
 import qualified Data.Text.IO        as T
+import           Data.Version        (showVersion)
 import           Lib                 (DeltaParams, defaultDeltaParams, generate,
                                       setDeltaParamsAuth, setDeltaParamsLabel,
                                       setDeltaParamsOwner, setDeltaParamsRepo,
                                       setDeltaParamsSince, setDeltaParamsUntil)
 import           Options.Applicative (Parser, ParserInfo, execParser, fullDesc,
-                                      header, help, helper, info, long,
-                                      optional, progDesc, strOption, (<>))
+                                      header, help, helper, info, infoOption,
+                                      long, optional, progDesc, short,
+                                      strOption, (<>))
+import           Paths_gh_delta      (version)
 import           System.Environment  (lookupEnv)
 import           System.Exit         (die)
 
@@ -27,10 +30,14 @@ data CLIOpts =
 
 cliOpts :: ParserInfo CLIOpts
 cliOpts =
-  info (helper <*> cliOptsParser)
+  info (helper <*> cliVersion <*> cliOptsParser)
     (fullDesc
      <> progDesc "Simple, opinionated, Github changelog generator written in Haskell"
      <> header "gh-delta - changelog generator")
+
+cliVersion :: Parser (a -> a)
+cliVersion = infoOption (showVersion version)
+               (long "version" <> short 'v' <> help "Show version information")
 
 cliOptsParser :: Parser CLIOpts
 cliOptsParser =
