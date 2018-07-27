@@ -3,6 +3,7 @@
 module Main where
 
 import           Control.Applicative ((<|>))
+import           Data.Monoid ((<>))
 import           Data.Function       ((&))
 import qualified Data.Text.IO        as T
 import           Data.Version        (showVersion)
@@ -13,7 +14,7 @@ import           Lib                 (DeltaParams, defaultDeltaParams, generate,
 import           Options.Applicative (Parser, ParserInfo, execParser, fullDesc,
                                       header, help, helper, hidden, info,
                                       infoOption, long, optional, progDesc,
-                                      short, strOption, (<>))
+                                      short, strOption)
 import           Paths_gh_delta      (version)
 import           System.Environment  (lookupEnv)
 import           System.Exit         (die)

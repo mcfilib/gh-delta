@@ -13,7 +13,6 @@ module Lib (
     setDeltaParamsLabel,
     ) where
 
-import           Data.Function    ((&))
 import           Data.Maybe       (fromMaybe)
 import           Data.Monoid      ((<>))
 import           Data.String      (fromString)
@@ -128,15 +127,14 @@ commitDate DeltaParams { .. } sha = do
 closedPullRequestsSince :: DeltaParams -> UTCTime -> UTCTime -> IO (Vector GH.SimplePullRequest)
 closedPullRequestsSince DeltaParams { .. } dateSince dateUntil = do
   response <- GH.executeRequestMaybe deltaParamsAuth $
-                GH.pullRequestsForR deltaParamsOwner deltaParamsRepo opts (Just 100)
+                GH.pullRequestsForR deltaParamsOwner deltaParamsRepo opts (GH.FetchAtLeast 100)
   case response of
     Left err  -> error $ show err
     Right prs -> return $ V.filter hasSinceBeenMerged prs
 
   where
-    opts :: GH.PullRequestOptions
-    opts = GH.defaultPullRequestOptions
-           & GH.setPullRequestOptionsState GH.PullRequestStateClosed
+    opts :: GH.PullRequestMod
+    opts = GH.stateClosed
 
     hasSinceBeenMerged :: GH.SimplePullRequest -> Bool
     hasSinceBeenMerged pr =
