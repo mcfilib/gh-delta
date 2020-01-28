@@ -1,8 +1,10 @@
-resolver: lts-11.13
+resolver: lts-14.22
 system-ghc: false
 install-ghc: true
 packages:
 - '.'
-extra-deps: []
+extra-deps:
+- binary-instances-1@sha256:b17565598b8df3241f9b46fa8e3a3368ecc8e3f2eb175d7c28f319042a6f5c79,2613
+- github-0.23@sha256:07671c92da7142668ecdeaa5669ddda629ae85f25acd2ecadd49f9a119a5eac6,6965
 flags: {}
 extra-package-dbs: []
